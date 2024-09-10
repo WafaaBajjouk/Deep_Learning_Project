@@ -1,0 +1,8 @@
+WARNING: Value for scheme.platlib does not match. Please report this to <https://github.com/pypa/pip/issues/10151>
+distutils: /u/dssc/wbajjouk/.local/lib/python3.9/site-packages
+sysconfig: /u/dssc/wbajjouk/.local/lib64/python3.9/site-packages
+WARNING: Additional context:
+user = True
+home = None
+root = None
+prefix = None

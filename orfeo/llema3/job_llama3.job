@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH --job-name=fine_tune_llama
+#SBATCH --output=fine_tune_llama_output.log
+#SBATCH --error=fine_tune_llama_error.log
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=32G
+#SBATCH --gres=gpu:1
+#SBATCH --time=02:00:00
+#SBATCH --partition=GPU
+
+python fine_tune_llama.py

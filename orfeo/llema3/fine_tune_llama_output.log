@@ -1,0 +1,36 @@
+The token has not been saved to the git credentials helper. Pass `add_to_git_credential=True` in this function directly or `--add-to-git-credential` if using via `huggingface-cli` if you want to set the git credential as well.
+Token is valid (permission: fineGrained).
+Your token has been saved to /u/dssc/wbajjouk/.cache/huggingface/token
+Login successful
+DatasetDict({
+    train: Dataset({
+        features: ['text', 'label'],
+        num_rows: 26216
+    })
+})
+{'loss': 3.8841, 'grad_norm': 1.3480820655822754, 'learning_rate': 0.0001992114701314478, 'epoch': 0.01}
+{'loss': 3.6256, 'grad_norm': 1.851453185081482, 'learning_rate': 0.0001968583161128631, 'epoch': 0.02}
+{'loss': 3.5281, 'grad_norm': 1.7495344877243042, 'learning_rate': 0.00019297764858882514, 'epoch': 0.04}
+{'loss': 3.4036, 'grad_norm': 2.076190233230591, 'learning_rate': 0.00018763066800438636, 'epoch': 0.05}
+{'loss': 3.5154, 'grad_norm': 2.54801869392395, 'learning_rate': 0.00018090169943749476, 'epoch': 0.06}
+{'loss': 3.3519, 'grad_norm': 1.9279154539108276, 'learning_rate': 0.00017459411454241822, 'epoch': 0.07}
+{'loss': 3.287, 'grad_norm': 2.1478171348571777, 'learning_rate': 0.00016565857557529566, 'epoch': 0.09}
+{'loss': 3.2554, 'grad_norm': 1.810763955116272, 'learning_rate': 0.00015568756164881882, 'epoch': 0.1}
+{'loss': 3.1989, 'grad_norm': 1.7607284784317017, 'learning_rate': 0.00014483832160900326, 'epoch': 0.11}
+{'loss': 3.2988, 'grad_norm': 1.9290375709533691, 'learning_rate': 0.00013328195445229868, 'epoch': 0.12}
+{'loss': 3.2475, 'grad_norm': 1.8473714590072632, 'learning_rate': 0.00012120071099220549, 'epoch': 0.13}
+{'loss': 3.2793, 'grad_norm': 2.1005547046661377, 'learning_rate': 0.00010878511965507434, 'epoch': 0.15}
+{'loss': 3.171, 'grad_norm': 1.9835748672485352, 'learning_rate': 9.748699045566626e-05, 'epoch': 0.16}
+{'loss': 3.2147, 'grad_norm': 2.2631611824035645, 'learning_rate': 8.497744108792429e-05, 'epoch': 0.17}
+{'loss': 3.0662, 'grad_norm': 2.3565940856933594, 'learning_rate': 7.270480644826749e-05, 'epoch': 0.18}
+{'loss': 3.2293, 'grad_norm': 1.8508110046386719, 'learning_rate': 6.086263331627976e-05, 'epoch': 0.2}
+{'loss': 3.1539, 'grad_norm': 2.438375234603882, 'learning_rate': 4.9637679836423924e-05, 'epoch': 0.21}
+{'loss': 3.1761, 'grad_norm': 2.3638761043548584, 'learning_rate': 3.920697023053949e-05, 'epoch': 0.22}
+{'loss': 3.1208, 'grad_norm': 3.4149653911590576, 'learning_rate': 2.9735003020115092e-05, 'epoch': 0.23}
+{'loss': 3.1355, 'grad_norm': 2.0438528060913086, 'learning_rate': 2.137115678633811e-05, 'epoch': 0.24}
+{'loss': 3.024, 'grad_norm': 2.4000375270843506, 'learning_rate': 1.4247334380634792e-05, 'epoch': 0.26}
+{'loss': 3.1331, 'grad_norm': 2.3826656341552734, 'learning_rate': 8.475882737908248e-06, 'epoch': 0.27}
+{'loss': 3.0447, 'grad_norm': 2.220181465148926, 'learning_rate': 4.147821098262405e-06, 'epoch': 0.28}
+{'loss': 3.1702, 'grad_norm': 2.1414384841918945, 'learning_rate': 1.3314055792131964e-06, 'epoch': 0.29}
+{'loss': 3.1653, 'grad_norm': 2.4133503437042236, 'learning_rate': 7.105273594107953e-08, 'epoch': 0.31}
+{'train_runtime': 2445.3165, 'train_samples_per_second': 3.272, 'train_steps_per_second': 0.102, 'train_loss': 3.267213478088379, 'epoch': 0.31}
