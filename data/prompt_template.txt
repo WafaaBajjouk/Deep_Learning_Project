@@ -1,0 +1,4 @@
+Given the headline and preview of a financial news article, classify the sentiment toward the provided ticker symbol. Respond only with "Positive", "Negative" or "Neutral".
+* Ticker: {}
+* Headline: {}
+* Preview: {}
