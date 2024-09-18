@@ -8,7 +8,7 @@
 #SBATCH --time=02:00:00
 #SBATCH --output=labeling.out  
 #SBATCH --error=labeling.err   
-#SBATCH --account=dssc
+#SBATCH --account=
 #SBATCH --array=0-4 
 start_chunk=$((SLURM_ARRAY_TASK_ID * 1))
 end_chunk=$((SLURM_ARRAY_TASK_ID * 1 + 1))
