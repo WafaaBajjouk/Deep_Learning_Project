@@ -4,7 +4,7 @@ import torch
 import pandas as pd
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-os.environ["HUGGING_FACE_HUB_TOKEN"] = "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"
+os.environ["HUGGING_FACE_HUB_TOKEN"] = ""
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 start_chunk = int(sys.argv[1])
