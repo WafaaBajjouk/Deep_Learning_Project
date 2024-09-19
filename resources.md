@@ -13,3 +13,4 @@
 * [Paper on related topic](https://ar5iv.labs.arxiv.org/html/2308.13032)
 * [Survey on Transfer Learning](https://arxiv.org/pdf/1801.06146)
 * [To tune or not to tune?](https://arxiv.org/pdf/1903.05987)
+* [Universal Language Model Fine-tuning for Text Classification](https://arxiv.org/pdf/1801.06146)
