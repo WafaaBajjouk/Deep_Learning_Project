@@ -1,7 +1,3 @@
-"""
-TODO ACTUALLY THIS IS NOT FOR FINE-TUNING BUT FOR PREDICTING (WITH INSTRUCT MODEL)
-"""
-
 from transformers import AutoTokenizer, DataCollatorWithPadding, AutoModelForCausalLM
 from huggingface_hub import login
 from datasets import Dataset
@@ -40,7 +36,7 @@ dataset = dataset.map(encode, batched=True).remove_columns(['text'])
 dataset = dataset.select(range(1000)) #TODO remove after debugging
 
 #model
-model = AutoModelForCausalLM.from_pretrained(
+model = AutoModelForCausalLM.from_pretrained( #TODO `torch_dtype=torch.float16`?
     model_name,
     device_map='auto', #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference#limits-and-further-development
     max_memory={ #https://huggingface.co/docs/accelerate/concept_guides/big_model_inference#designing-a-device-map
