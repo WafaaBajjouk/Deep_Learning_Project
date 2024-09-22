@@ -17,7 +17,7 @@ date; echo $SLURM_JOB_ID; srun hostname; echo -e "-----------------------------\
 source ~/.bashrc
 conda activate deep-gpu
 
-python label.py
+python finetune.py
 
 #print footer
 echo -e "\n-----------------------------\nDone"; date

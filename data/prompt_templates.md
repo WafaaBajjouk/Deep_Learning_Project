@@ -24,5 +24,3 @@ Given the headline and preview of a financial news article, classify the sentime
 ## Response
 {}""" #no indentation
 ```
-
-* TODO explore GPT 2 tokenizer and adjust the format

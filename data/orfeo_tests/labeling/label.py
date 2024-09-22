@@ -27,7 +27,7 @@ tokenizer = AutoTokenizer.from_pretrained(
     model_name,
     pad_token='<|finetune_right_pad_id|>',
     padding_side='left', #https://huggingface.co/docs/transformers/llm_tutorial#wrong-padding-side
-    cache_dir=f'/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/') #download resumes by default
+    cache_dir='/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/')
 
 #dataset
 df = pd.concat([pd.read_csv('data/stocks.csv'), pd.read_csv('data/crypto.csv')], ignore_index=True)
@@ -41,7 +41,8 @@ model = AutoModelForCausalLM.from_pretrained( #TODO `torch_dtype=torch.float16`?
     device_map='auto', #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference#limits-and-further-development
     max_memory={ #https://huggingface.co/docs/accelerate/concept_guides/big_model_inference#designing-a-device-map
         0: '32GiB', #TODO tune? (may crash if too large)
-        1: '32GiB'}) #TODO tune? (may crash if too large)
+        1: '32GiB'}, #TODO tune? (may crash if too large)
+    cache_dir='/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/') #download resumes by default
 print(model.hf_device_map, flush=True) #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference
 
 #generate
