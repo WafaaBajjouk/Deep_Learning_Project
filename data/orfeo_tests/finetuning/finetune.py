@@ -74,16 +74,6 @@ model = AutoModelForCausalLM.from_pretrained( #`torch_dtype=torch.float16`?
     cache_dir='/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/') #download resumes by default
 print(model.hf_device_map, flush=True) #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference
 
-#apply LoRA (https://huggingface.co/docs/peft/main/en/conceptual_guides/lora#common-lora-parameters-in-peft)
-lora_config = LoraConfig( #as https://huggingface.co/docs/transformers/v4.44.2/en/peft#train-a-peft-adapter
-    lora_alpha=16,
-    lora_dropout=0.1,
-    r=64,
-    bias="none",
-    task_type="CAUSAL_LM",
-    fan_in_fan_out=True) #avoids warning
-model = get_peft_model(model, lora_config) #TODO try without LoRA
-
 #training
 args = TrainingArguments(
     output_dir='tmp_trainer', #`pip install tensorboard` to also save logs
