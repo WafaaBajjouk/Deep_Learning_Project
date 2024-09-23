@@ -1,0 +1,2 @@
+2024-09-21 00:57:15,373 - Model download and save time: 3921.08 seconds
+2024-09-21 00:57:17,936 - Tokenizer download and save time: 2.56 seconds
