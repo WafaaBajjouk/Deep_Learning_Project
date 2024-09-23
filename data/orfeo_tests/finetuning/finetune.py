@@ -1,7 +1,7 @@
 from transformers import AutoTokenizer, DataCollatorForLanguageModeling, DataCollatorWithPadding, AutoModelForCausalLM, TrainingArguments, Trainer
+from peft import LoraConfig, get_peft_model
 from huggingface_hub import login
 from datasets import Dataset
-from peft import LoraConfig
 from math import ceil
 import pandas as pd
 import torch
@@ -53,7 +53,7 @@ train_set = train_set.map(lambda row: format(row, eval=False)).remove_columns(['
 train_set = train_set.map(lambda batch: encode(batch, eval=False), batched=True).remove_columns(['text'])
 train_set = train_set.filter(lambda row: len(row['input_ids']) < train_tok.model_max_length)
 train_set = train_set.select(range(1000)) #TODO remove after debugging
-train_set, val_set = train_set.train_test_split(test_size=0.1, seed=42).values() #TODO is val_set used?
+train_set, val_set = train_set.train_test_split(test_size=0.1, seed=42).values()
 
 #test set
 test_set = test_set.map(lambda row: format(row, eval=True)).remove_columns(['ticker', 'headline', 'preview'])
@@ -65,44 +65,56 @@ test_set = test_set.select(range(1000)) #TODO remove after debugging
 # print(train_coll([train_set[i] for i in range(2)]), flush=True) #helpful to understand
 
 #model
-model = AutoModelForCausalLM.from_pretrained( #TODO `torch_dtype=torch.float16`?
+model = AutoModelForCausalLM.from_pretrained( #`torch_dtype=torch.float16`?
     model_name,
     device_map='auto', #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference#limits-and-further-development
     max_memory={ #https://huggingface.co/docs/accelerate/concept_guides/big_model_inference#designing-a-device-map
-        0: '32GiB', #TODO tune? (may crash if too large)
-        1: '32GiB'}, #TODO tune? (may crash if too large)
+        0: '32GiB', #may crash if too large
+        1: '32GiB'}, #may crash if too large
     cache_dir='/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/') #download resumes by default
 print(model.hf_device_map, flush=True) #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference
 
-#LoRA TODO tune and search doc for other parameters
-peft_config = LoraConfig( #https://huggingface.co/docs/transformers/peft#train-a-peft-adapter
+#apply LoRA (https://huggingface.co/docs/peft/main/en/conceptual_guides/lora#common-lora-parameters-in-peft)
+lora_config = LoraConfig( #as https://huggingface.co/docs/transformers/v4.44.2/en/peft#train-a-peft-adapter
     lora_alpha=16,
     lora_dropout=0.1,
     r=64,
-    bias='none',
-    task_type='CAUSAL_LM',
+    bias="none",
+    task_type="CAUSAL_LM",
     fan_in_fan_out=True) #avoids warning
-model.add_adapter(peft_config) #TODO try also without it (it seems to train a lot better but takes double the time)
+model = get_peft_model(model, lora_config) #TODO try without LoRA
 
-#training TODO tune and search doc for other parameters (continue training?, evaluation?, etc.)
+#training
 args = TrainingArguments(
     output_dir='tmp_trainer', #`pip install tensorboard` to also save logs
-    per_device_train_batch_size=2, #TODO tune? (crashes if too large)
-    per_device_eval_batch_size=2, #TODO tune? (crashes if too large)
-    logging_steps=50)
+    overwrite_output_dir=False, #to continue training (manually delete dir to restart)
+    eval_strategy='steps',
+    per_device_train_batch_size=16, #crashes if too large (ok if auto_find_batch_size=True)
+    per_device_eval_batch_size=16, #crashes if too large (ok if auto_find_batch_size=True)
+    torch_empty_cache_steps=None, #default None
+    learning_rate=5e-5, #default 5e-5
+    num_train_epochs=2.0, #increase to continue training that ended correctly
+    logging_steps=100, #also sets eval_steps to same value by default TODO tune?
+    save_steps=500, #must be a round multiple of eval_steps TODO tune?
+    save_total_limit=2, #still retains best checkpoint if load_best_model_at_end=True
+    load_best_model_at_end=True,
+    group_by_length=True, #why not
+    auto_find_batch_size=True) #keeps training with lower batch size if crashes
 trainer = Trainer(
     model=model,
     args=args,
     data_collator=train_coll,
     train_dataset=train_set,
     eval_dataset=val_set)
-trainer.train() #see logs with eg. `ssh -L 9999:localhost:6006 mpolo000@195.14.102.215` + `tensorboard --logdir .`
+try:
+    trainer.train(resume_from_checkpoint=True) #see logs with eg. `ssh -L 9999:localhost:6006 mpolo000@195.14.102.215` + `tensorboard --logdir .`
+except ValueError:
+    trainer.train()
 
-#TODO how to reload model from checkpoints?
 
 #TODO use or delete code below
 # #generate
-# batch_size = 32 #TODO tune?
+# batch_size = 8 #TODO tune?
 # generated = []
 # for i in range(ceil(len(test_set)/batch_size)):
 #     print(i, end=' ', flush=True)

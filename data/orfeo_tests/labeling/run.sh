@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --partition=GPU
-#SBATCH --exclude=gpu[003]
 #SBATCH --time=1:00:00
 #SBATCH --mem=0
 #SBATCH --cpus-per-task=48
