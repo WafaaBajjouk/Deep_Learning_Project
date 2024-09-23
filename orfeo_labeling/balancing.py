@@ -21,3 +21,5 @@ balanced_data = (
 
 after_counts = Counter(balanced_data['sentiment'])
 print("Sentiment Distribution After Balancing:", after_counts)
+
+balanced_data.to_csv('balanced_labeling_data.csv', index=False)
