@@ -1,5 +1,4 @@
 from transformers import AutoTokenizer, DataCollatorForLanguageModeling, DataCollatorWithPadding, AutoModelForCausalLM, TrainingArguments, Trainer
-from peft import LoraConfig, get_peft_model
 from huggingface_hub import login
 from datasets import Dataset
 from math import ceil
@@ -46,8 +45,7 @@ test_tok = AutoTokenizer.from_pretrained(
 test_coll = DataCollatorWithPadding(test_tok) #for dynamic padding applying test_tok.pad
 
 #train set
-df = pd.concat([pd.read_csv('data/stocks.csv'), pd.read_csv('data/crypto.csv')], ignore_index=True)
-df['sentiment'] = 'Positive' #TODO use labeled dataset instead
+df = pd.read_csv('balanced_labeling_data.csv')
 train_set, test_set = Dataset.from_pandas(df).train_test_split(test_size=0.1, seed=42).values()
 train_set = train_set.map(lambda row: format(row, eval=False)).remove_columns(['ticker', 'headline', 'preview', 'sentiment'])
 train_set = train_set.map(lambda batch: encode(batch, eval=False), batched=True).remove_columns(['text'])
@@ -83,9 +81,9 @@ args = TrainingArguments(
     per_device_eval_batch_size=16, #crashes if too large (ok if auto_find_batch_size=True)
     torch_empty_cache_steps=None, #default None
     learning_rate=5e-5, #default 5e-5
-    num_train_epochs=2.0, #increase to continue training that ended correctly
-    logging_steps=100, #also sets eval_steps to same value by default TODO tune?
-    save_steps=500, #must be a round multiple of eval_steps TODO tune?
+    num_train_epochs=2.0, #increase to continue a training that ended correctly
+    logging_steps=100, #also sets eval_steps to same value by default
+    save_steps=1000, #must be a round multiple of eval_steps
     save_total_limit=2, #still retains best checkpoint if load_best_model_at_end=True
     load_best_model_at_end=True,
     group_by_length=True, #why not
