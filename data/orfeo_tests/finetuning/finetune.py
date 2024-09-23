@@ -62,54 +62,68 @@ test_set = test_set.select(range(1000)) #TODO remove after debugging
 
 # print(train_coll([train_set[i] for i in range(2)]), flush=True) #helpful to understand
 
-#model
-model = AutoModelForCausalLM.from_pretrained( #`torch_dtype=torch.float16`?
-    model_name,
-    device_map='auto', #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference#limits-and-further-development
-    max_memory={ #https://huggingface.co/docs/accelerate/concept_guides/big_model_inference#designing-a-device-map
-        0: '32GiB', #may crash if too large
-        1: '32GiB'}, #may crash if too large
-    cache_dir='/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/') #download resumes by default
-print(model.hf_device_map, flush=True) #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference
+train = True
 
 #training
-args = TrainingArguments(
-    output_dir='tmp_trainer', #`pip install tensorboard` to also save logs
-    overwrite_output_dir=False, #to continue training (manually delete dir to restart)
-    eval_strategy='steps',
-    per_device_train_batch_size=16, #crashes if too large (ok if auto_find_batch_size=True)
-    per_device_eval_batch_size=16, #crashes if too large (ok if auto_find_batch_size=True)
-    torch_empty_cache_steps=None, #default None
-    learning_rate=5e-5, #default 5e-5
-    num_train_epochs=2.0, #increase to continue a training that ended correctly
-    logging_steps=100, #also sets eval_steps to same value by default
-    save_steps=1000, #must be a round multiple of eval_steps
-    save_total_limit=2, #still retains best checkpoint if load_best_model_at_end=True
-    load_best_model_at_end=True,
-    group_by_length=True, #why not
-    auto_find_batch_size=True) #keeps training with lower batch size if crashes
-trainer = Trainer(
-    model=model,
-    args=args,
-    data_collator=train_coll,
-    train_dataset=train_set,
-    eval_dataset=val_set)
-try:
-    trainer.train(resume_from_checkpoint=True) #see logs with eg. `ssh -L 9999:localhost:6006 mpolo000@195.14.102.215` + `tensorboard --logdir .`
-except ValueError:
-    trainer.train()
+print('train = ', train)
+output_dir = 'tmp_trainer'
+best_dir = output_dir + '/best/'
+if train:
 
+    #model
+    model = AutoModelForCausalLM.from_pretrained( #`torch_dtype=torch.float16`?
+        model_name,
+        device_map='auto', #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference#limits-and-further-development
+        max_memory={ #https://huggingface.co/docs/accelerate/concept_guides/big_model_inference#designing-a-device-map
+            0: '32GiB', #may crash if too large
+            1: '32GiB'}, #may crash if too large
+        cache_dir='/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/') #download resumes by default
+    print(model.hf_device_map, flush=True) #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference
 
-#TODO use or delete code below
-# #generate
-# batch_size = 8 #TODO tune?
-# generated = []
-# for i in range(ceil(len(test_set)/batch_size)):
-#     print(i, end=' ', flush=True)
-#     batch = test_coll(test_set[i*batch_size:(i+1)*batch_size]).to('cuda')
-#     generated_ids = model.generate( #https://huggingface.co/docs/transformers/en/main_classes/text_generation
-#         **batch,
-#         pad_token_id=test_tok.pad_token_id, #avoids warning
-#         max_new_tokens=max_new_tokens)
-#     generated = generated + test_tok.batch_decode(generated_ids[:,-1])
-# print(generated[-3:])
+    #train
+    args = TrainingArguments(
+        output_dir=output_dir, #`pip install tensorboard` to also save logs (in runs/)
+        overwrite_output_dir=False, #to continue training (manually delete dir to restart)
+        eval_strategy='steps',
+        per_device_train_batch_size=16, #crashes if too large but ok if auto_find_batch_size=True
+        per_device_eval_batch_size=2, #crashes if too large TODO tune?
+        torch_empty_cache_steps=None, #default None #TODO tune?
+        learning_rate=5e-5, #default 5e-5
+        num_train_epochs=3.0, #increase to continue a training that ended correctly
+        logging_steps=100, #also sets eval_steps to same value by default
+        save_steps=1000, #must be a round multiple of eval_steps
+        save_total_limit=2, #still retains best checkpoint if load_best_model_at_end=True
+        load_best_model_at_end=True,
+        group_by_length=True, #why not
+        auto_find_batch_size=True) #keeps training with lower train batch size if crashes
+    trainer = Trainer(
+        model=model,
+        args=args,
+        data_collator=train_coll,
+        train_dataset=train_set,
+        eval_dataset=val_set)
+    try:
+        trainer.train(resume_from_checkpoint=True) #see logs with eg. `ssh -L 9999:localhost:6006 mpolo000@195.14.102.215` + `tensorboard --logdir .`
+    except ValueError:
+        trainer.train()
+
+    #save best for reuse
+    model.save_pretrained(best_dir)
+
+else:
+    model = AutoModelForCausalLM.from_pretrained(best_dir, device_map='auto')
+
+#evaluation TODO adjust (tqdm, save true vs generated, etc.)
+prompts = test_set.remove_columns(['sentiment'])
+batch_size = 2 #crashes if too large TODO tune?
+generated = []
+for i in range(ceil(len(prompts)/batch_size)):
+    if not i%100:
+        print(i, end=' ', flush=True)
+    batch = test_coll(prompts[i*batch_size:(i+1)*batch_size]).to('cuda')
+    generated_ids = model.generate( #https://huggingface.co/docs/transformers/en/main_classes/text_generation
+        **batch,
+        pad_token_id=test_tok.pad_token_id, #avoids warning
+        max_new_tokens=max_new_tokens)
+    generated = generated + test_tok.batch_decode(generated_ids[:,-max_new_tokens:])
+print('true:', test_set['sentiment'][-9:], '\ngenerated:', generated[-9:])
