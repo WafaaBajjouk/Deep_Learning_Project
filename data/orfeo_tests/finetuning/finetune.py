@@ -115,7 +115,7 @@ if train:
 else:
     model = AutoModelForCausalLM.from_pretrained(best_dir, device_map='auto')
 
-#evaluation TODO test
+#evaluation
 prompts = test_set.remove_columns(['sentiment'])
 batch_size = 2 #crashes if too large TODO tune?
 generated = []
@@ -128,10 +128,10 @@ for i in tqdm(range(ceil(len(prompts)/batch_size))):
     generated = generated + test_tok.batch_decode(generated_ids[:,-max_new_tokens:])
 
 #save results to analyze in Colab
-pd.DataFrame({'true': test_set['sentiment'], 'generated': generated})
+pd.DataFrame({'true': test_set['sentiment'], 'generated': generated}).to_csv('true_vs_gen.csv', index=False)
 
 #TODO when resuming training the eval loss jumps badly. Maybe because it say
 #"There were missing keys in the checkpoint model loaded: ['lm_head.weight']."?
 #I tried to add `save_safetensors=False`. Remove it if causes problems
 
-#TODO launch all jobs in same node to serialize
+#TODO launch all jobs in same node to serialize (delete old tmp_trainer/ if needed)
