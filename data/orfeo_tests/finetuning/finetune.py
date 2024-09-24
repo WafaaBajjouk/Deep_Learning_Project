@@ -87,8 +87,8 @@ if train:
         overwrite_output_dir=False, #to continue training (manually delete dir to restart)
         eval_strategy='steps',
         per_device_train_batch_size=4, #crashes if too large but ok if auto_find_batch_size=True
-        per_device_eval_batch_size=2, #crashes if too large TODO tune?
-        torch_empty_cache_steps=None, #default None TODO tune?
+        per_device_eval_batch_size=2, #crashes if too large
+        torch_empty_cache_steps=None, #default None
         learning_rate=5e-5, #default 5e-5
         num_train_epochs=3.0, #increase to continue a training that ended; use 0 to end a training that aborted
         logging_steps=1600, #also sets eval_steps to same value by default
@@ -117,7 +117,7 @@ else:
 
 #evaluation
 prompts = test_set.remove_columns(['sentiment'])
-batch_size = 2 #crashes if too large TODO tune?
+batch_size = 2 #crashes if too large
 generated = []
 for i in tqdm(range(ceil(len(prompts)/batch_size))):
     batch = test_coll(prompts[i*batch_size:(i+1)*batch_size]).to('cuda')
@@ -129,9 +129,5 @@ for i in tqdm(range(ceil(len(prompts)/batch_size))):
 
 #save results to analyze in Colab
 pd.DataFrame({'true': test_set['sentiment'], 'generated': generated}).to_csv('true_vs_gen.csv', index=False)
-
-#TODO when resuming training the eval loss jumps badly. Maybe because it say
-#"There were missing keys in the checkpoint model loaded: ['lm_head.weight']."?
-#I tried to add `save_safetensors=False`. Does it solve the jumps? Remove it if causes other problems
 
 #TODO delete old tmp_trainer/ and launch all jobs in same node to serialize (eg. `#SBATCH --nodelist=gpu[001]`)
