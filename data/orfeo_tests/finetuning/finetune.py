@@ -9,12 +9,12 @@ USAGE:
 7. Back up `tmp_trainer/` somewhere, just in case
 8. Delete `tmp_trainer/checkpoint-*` to restart training on completion only
 9. Set `completion_only=True` below
-10. Launch all jobs in same node as before
+10. Launch all jobs in same node to serialize as before
 11. Check progress as before
 12. Once overfitted, make sure the training ends to save the best model for completion
 13. Compare `true_vs_gen.csv` with `true_vs_gen_comp.csv` on Colab
 14. If needed, skip training (`train=False`) and recreate `true_vs_gen.csv` (`completion_only=False`) or `true_vs_gen_comp.csv` (`completion_only=True`)
-""" #TODO (from 6.)
+""" #TODO use it from 10. (set `completion_only=True` again in ORFEO if needed)
 
 from transformers import AutoTokenizer, DataCollatorForLanguageModeling, DataCollatorWithPadding, AutoModelForCausalLM, TrainingArguments, Trainer
 from trl import DataCollatorForCompletionOnlyLM
@@ -57,8 +57,8 @@ train_coll = DataCollatorForLanguageModeling(train_tok, mlm=False) #for labels a
 
 #data collator for completion only
 response_template = '\n## Response\n'
-assert response_template in format({'ticker':'', 'headline':'', 'preview':'', 'sentiment':''})['text']
-comp_coll = DataCollatorForCompletionOnlyLM(train_tok) #https://huggingface.co/docs/trl/v0.11.0/en/sft_trainer#train-on-completions-only
+assert response_template in format({'ticker':'', 'headline':'', 'preview':'', 'sentiment':''}, eval=False)['text']
+comp_coll = DataCollatorForCompletionOnlyLM(response_template, tokenizer=train_tok) #https://huggingface.co/docs/trl/v0.11.0/en/sft_trainer#train-on-completions-only
 
 #data collator for testing
 test_tok = AutoTokenizer.from_pretrained(
@@ -91,7 +91,7 @@ train = True
 completion_only = False
 
 #training
-print('train = ', train, '\ncompletion_only = ', completion_only, flush=True)
+print('train =', train, '\ncompletion_only =', completion_only, flush=True)
 output_dir = 'tmp_trainer'
 best_dir = output_dir + '/best/'
 best_comp_dir = output_dir + '/best_comp/'
