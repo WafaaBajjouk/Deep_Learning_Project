@@ -51,7 +51,7 @@ train_set, test_set = Dataset.from_pandas(df).train_test_split(test_size=0.1, se
 train_set = train_set.map(lambda row: format(row, eval=False)).remove_columns(['ticker', 'headline', 'preview', 'sentiment'])
 train_set = train_set.map(lambda batch: encode(batch, eval=False), batched=True).remove_columns(['text'])
 train_set = train_set.filter(lambda row: len(row['input_ids']) < train_tok.model_max_length)
-train_set = train_set.select(range(10000)) #TODO remove after debugging
+# train_set = train_set.select(range(10000)) #remove after debugging
 train_set, val_set = train_set.train_test_split(test_size=0.1, seed=42).values()
 
 #test set
@@ -59,11 +59,11 @@ test_set = test_set.map(lambda row: format(row, eval=True)).remove_columns(['tic
 test_set = test_set.map(lambda batch: encode(batch, eval=True), batched=True).remove_columns(['text'])
 max_new_tokens = 2 #Positive: [21604, 1800], Negative: [32863, 876], Neutral: [8199, 6815]
 test_set = test_set.filter(lambda row: len(row['input_ids']) < test_tok.model_max_length-max_new_tokens)
-test_set = test_set.select(range(10000)) #TODO remove after debugging
+# test_set = test_set.select(range(10000)) #remove after debugging
 
 # print(train_coll([train_set[i] for i in range(2)]), flush=True) #helpful to understand
 
-train = False
+train = True
 
 #training
 print('train = ', train)
@@ -88,9 +88,9 @@ if train:
         eval_strategy='steps',
         per_device_train_batch_size=4, #crashes if too large but ok if auto_find_batch_size=True
         per_device_eval_batch_size=2, #crashes if too large TODO tune?
-        torch_empty_cache_steps=None, #default None #TODO tune?
+        torch_empty_cache_steps=None, #default None TODO tune?
         learning_rate=5e-5, #default 5e-5
-        num_train_epochs=2.0, #increase to continue a training that ended correctly
+        num_train_epochs=2.0, #increase to continue a training that ended; use 0 to end a training that aborted
         logging_steps=100, #also sets eval_steps to same value by default
         save_steps=500, #must be a round multiple of eval_steps
         save_total_limit=2, #still retains best checkpoint if load_best_model_at_end=True
@@ -132,6 +132,6 @@ pd.DataFrame({'true': test_set['sentiment'], 'generated': generated}).to_csv('tr
 
 #TODO when resuming training the eval loss jumps badly. Maybe because it say
 #"There were missing keys in the checkpoint model loaded: ['lm_head.weight']."?
-#I tried to add `save_safetensors=False`. Remove it if causes problems
+#I tried to add `save_safetensors=False`. Does it solve the jumps? Remove it if causes other problems
 
-#TODO launch all jobs in same node to serialize (delete old tmp_trainer/ if needed)
+#TODO delete old tmp_trainer/ and launch all jobs in same node to serialize
