@@ -1,6 +1,7 @@
 from transformers import AutoTokenizer, DataCollatorForLanguageModeling, DataCollatorWithPadding, AutoModelForCausalLM, TrainingArguments, Trainer
 from huggingface_hub import login
 from datasets import Dataset
+from tqdm import tqdm
 from math import ceil
 import pandas as pd
 import torch
@@ -50,7 +51,7 @@ train_set, test_set = Dataset.from_pandas(df).train_test_split(test_size=0.1, se
 train_set = train_set.map(lambda row: format(row, eval=False)).remove_columns(['ticker', 'headline', 'preview', 'sentiment'])
 train_set = train_set.map(lambda batch: encode(batch, eval=False), batched=True).remove_columns(['text'])
 train_set = train_set.filter(lambda row: len(row['input_ids']) < train_tok.model_max_length)
-train_set = train_set.select(range(1000)) #TODO remove after debugging
+train_set = train_set.select(range(10000)) #TODO remove after debugging
 train_set, val_set = train_set.train_test_split(test_size=0.1, seed=42).values()
 
 #test set
@@ -58,11 +59,11 @@ test_set = test_set.map(lambda row: format(row, eval=True)).remove_columns(['tic
 test_set = test_set.map(lambda batch: encode(batch, eval=True), batched=True).remove_columns(['text'])
 max_new_tokens = 2 #Positive: [21604, 1800], Negative: [32863, 876], Neutral: [8199, 6815]
 test_set = test_set.filter(lambda row: len(row['input_ids']) < test_tok.model_max_length-max_new_tokens)
-test_set = test_set.select(range(1000)) #TODO remove after debugging
+test_set = test_set.select(range(10000)) #TODO remove after debugging
 
 # print(train_coll([train_set[i] for i in range(2)]), flush=True) #helpful to understand
 
-train = True
+train = False
 
 #training
 print('train = ', train)
@@ -85,14 +86,15 @@ if train:
         output_dir=output_dir, #`pip install tensorboard` to also save logs (in runs/)
         overwrite_output_dir=False, #to continue training (manually delete dir to restart)
         eval_strategy='steps',
-        per_device_train_batch_size=16, #crashes if too large but ok if auto_find_batch_size=True
+        per_device_train_batch_size=4, #crashes if too large but ok if auto_find_batch_size=True
         per_device_eval_batch_size=2, #crashes if too large TODO tune?
         torch_empty_cache_steps=None, #default None #TODO tune?
         learning_rate=5e-5, #default 5e-5
-        num_train_epochs=3.0, #increase to continue a training that ended correctly
+        num_train_epochs=2.0, #increase to continue a training that ended correctly
         logging_steps=100, #also sets eval_steps to same value by default
-        save_steps=1000, #must be a round multiple of eval_steps
+        save_steps=500, #must be a round multiple of eval_steps
         save_total_limit=2, #still retains best checkpoint if load_best_model_at_end=True
+        save_safetensors=False, #https://discuss.huggingface.co/t/resuming-training-there-were-missing-keys-in-the-checkpoint-model-loaded-lm-head-weight/103831
         load_best_model_at_end=True,
         group_by_length=True, #why not
         auto_find_batch_size=True) #keeps training with lower train batch size if crashes
@@ -108,22 +110,28 @@ if train:
         trainer.train()
 
     #save best for reuse
-    model.save_pretrained(best_dir)
+    model.save_pretrained(best_dir) #overwrites existing one but is the same or better
 
 else:
     model = AutoModelForCausalLM.from_pretrained(best_dir, device_map='auto')
 
-#evaluation TODO adjust (tqdm, save true vs generated, etc.)
+#evaluation TODO test
 prompts = test_set.remove_columns(['sentiment'])
 batch_size = 2 #crashes if too large TODO tune?
 generated = []
-for i in range(ceil(len(prompts)/batch_size)):
-    if not i%100:
-        print(i, end=' ', flush=True)
+for i in tqdm(range(ceil(len(prompts)/batch_size))):
     batch = test_coll(prompts[i*batch_size:(i+1)*batch_size]).to('cuda')
     generated_ids = model.generate( #https://huggingface.co/docs/transformers/en/main_classes/text_generation
         **batch,
         pad_token_id=test_tok.pad_token_id, #avoids warning
         max_new_tokens=max_new_tokens)
     generated = generated + test_tok.batch_decode(generated_ids[:,-max_new_tokens:])
-print('true:', test_set['sentiment'][-9:], '\ngenerated:', generated[-9:])
+
+#save results to analyze in Colab
+pd.DataFrame({'true': test_set['sentiment'], 'generated': generated})
+
+#TODO when resuming training the eval loss jumps badly. Maybe because it say
+#"There were missing keys in the checkpoint model loaded: ['lm_head.weight']."?
+#I tried to add `save_safetensors=False`. Remove it if causes problems
+
+#TODO launch all jobs in same node to serialize
