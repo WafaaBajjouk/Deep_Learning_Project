@@ -1,4 +1,23 @@
+"""
+USAGE:
+1. Delete old `tmp_trainer/` to start fresh
+2. Set `train=True` and `completion_only=False` below
+3. Launch all jobs in same node to serialize (eg. `sbatch --nodelist=gpu[001] run.sh`, ...)
+4. Check progress with Tensorboard (search "tensorboard" below)
+5. Play with `num_train_epochs` below between jobs if needed
+6. Once overfitted, make sure the training ends to save the best model
+7. Back up `tmp_trainer/` somewhere, just in case
+8. Delete `tmp_trainer/checkpoint-*` to restart training on completion only
+9. Set `completion_only=True` below
+10. Launch all jobs in same node as before
+11. Check progress as before
+12. Once overfitted, make sure the training ends to save the best model for completion
+13. Compare `true_vs_gen.csv` with `true_vs_gen_comp.csv` on Colab
+14. If needed, skip training (`train=False`) and recreate `true_vs_gen.csv` (`completion_only=False`) or `true_vs_gen_comp.csv` (`completion_only=True`)
+""" #TODO (from 6.)
+
 from transformers import AutoTokenizer, DataCollatorForLanguageModeling, DataCollatorWithPadding, AutoModelForCausalLM, TrainingArguments, Trainer
+from trl import DataCollatorForCompletionOnlyLM
 from huggingface_hub import login
 from datasets import Dataset
 from tqdm import tqdm
@@ -36,6 +55,11 @@ train_tok = AutoTokenizer.from_pretrained(
     cache_dir='/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/')
 train_coll = DataCollatorForLanguageModeling(train_tok, mlm=False) #for labels and dynamic padding applying train_tok.pad
 
+#data collator for completion only
+response_template = '\n## Response\n'
+assert response_template in format({'ticker':'', 'headline':'', 'preview':'', 'sentiment':''})['text']
+comp_coll = DataCollatorForCompletionOnlyLM(train_tok) #https://huggingface.co/docs/trl/v0.11.0/en/sft_trainer#train-on-completions-only
+
 #data collator for testing
 test_tok = AutoTokenizer.from_pretrained(
     model_name,
@@ -61,24 +85,26 @@ max_new_tokens = 2 #Positive: [21604, 1800], Negative: [32863, 876], Neutral: [8
 test_set = test_set.filter(lambda row: len(row['input_ids']) < test_tok.model_max_length-max_new_tokens)
 # test_set = test_set.select(range(10000)) #remove after debugging
 
-# print(train_coll([train_set[i] for i in range(2)]), flush=True) #helpful to understand
+# print(comp_coll([train_set[i] for i in range(2)]), flush=True) #helpful to understand
 
 train = True
+completion_only = False
 
 #training
-print('train = ', train)
+print('train = ', train, '\ncompletion_only = ', completion_only, flush=True)
 output_dir = 'tmp_trainer'
 best_dir = output_dir + '/best/'
+best_comp_dir = output_dir + '/best_comp/'
 if train:
 
     #model
     model = AutoModelForCausalLM.from_pretrained( #`torch_dtype=torch.float16`?
-        model_name,
+        best_dir if completion_only else model_name,
         device_map='auto', #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference#limits-and-further-development
         max_memory={ #https://huggingface.co/docs/accelerate/concept_guides/big_model_inference#designing-a-device-map
             0: '32GiB', #may crash if too large
             1: '32GiB'}, #may crash if too large
-        cache_dir='/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/') #download resumes by default
+        cache_dir=(None if completion_only else '/orfeo/fast/dssc/mpolo000/cache/huggingface/hub/')) #download resumes by default
     print(model.hf_device_map, flush=True) #https://huggingface.co/docs/accelerate/en/concept_guides/big_model_inference
 
     #train
@@ -90,10 +116,10 @@ if train:
         per_device_eval_batch_size=2, #crashes if too large
         torch_empty_cache_steps=None, #default None
         learning_rate=5e-5, #default 5e-5
-        num_train_epochs=3.0, #increase to continue a training that ended; use 0 to end a training that aborted
+        num_train_epochs=1.5, #increase to continue a training that ended; use 0 to end a training that aborted
         logging_steps=1600, #also sets eval_steps to same value by default
         save_steps=1600, #must be a round multiple of eval_steps
-        save_total_limit=2, #still retains best checkpoint if load_best_model_at_end=True
+        save_total_limit=3, #still retains best checkpoint if load_best_model_at_end=True
         save_safetensors=False, #https://discuss.huggingface.co/t/resuming-training-there-were-missing-keys-in-the-checkpoint-model-loaded-lm-head-weight/103831
         load_best_model_at_end=True,
         group_by_length=True, #why not
@@ -101,7 +127,7 @@ if train:
     trainer = Trainer(
         model=model,
         args=args,
-        data_collator=train_coll,
+        data_collator=(comp_coll if completion_only else train_coll),
         train_dataset=train_set,
         eval_dataset=val_set)
     try:
@@ -110,10 +136,10 @@ if train:
         trainer.train()
 
     #save best for reuse
-    model.save_pretrained(best_dir) #overwrites existing one but is the same or better
+    model.save_pretrained(best_comp_dir if completion_only else best_dir) #overwrites existing one but is the same or better
 
 else:
-    model = AutoModelForCausalLM.from_pretrained(best_dir, device_map='auto')
+    model = AutoModelForCausalLM.from_pretrained(best_comp_dir if completion_only else best_dir, device_map='auto')
 
 #evaluation
 prompts = test_set.remove_columns(['sentiment'])
@@ -128,6 +154,6 @@ for i in tqdm(range(ceil(len(prompts)/batch_size))):
     generated = generated + test_tok.batch_decode(generated_ids[:,-max_new_tokens:])
 
 #save results to analyze in Colab
-pd.DataFrame({'true': test_set['sentiment'], 'generated': generated}).to_csv('true_vs_gen.csv', index=False)
-
-#TODO delete old tmp_trainer/ and launch all jobs in same node to serialize (eg. `#SBATCH --nodelist=gpu[001]`)
+pd.DataFrame({'true': test_set['sentiment'], 'generated': generated}).to_csv(
+    'true_vs_gen_comp.csv' if completion_only else 'true_vs_gen.csv',
+    index=False)
