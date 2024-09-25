@@ -68,35 +68,87 @@
 ### Train-test-validation split
 
 * **Train**: ~98,000 news (~88%)
-* **Test**: ~11,000 news (~10%)
 * **Validation**: ~2000 news (~2%)
+    * For **hyperparameter** tuning on loss function
+* **Test**: ~11,000 news (~10%)
+    * For **sentiment analysis** accuracy
+    * Prompts do not include **responses**
 
 ---
 
 ### Tokenization
 
 1. Breaks down prompt into **smaller units** (tokens)
-2. Maps tokens to **numbers** in [0, 50,256]
+2. **Discards** results longer than 1024 tokens (~20 news)
+3. Maps tokens to **ids** in [0, 50,256]
     * Same used by **OpenAI** for training
-3. **Discards** results longer than 1024 tokens (~20 news)
 * **Examples:**
     * 'Given the' -> `[15056, 262]`
     * 'Positive' -> `[21604, 1800]`
 
 ---
 
-### TODO
+### Input tensors (1/2)
 
-
-
-
-
-
-
-
+* **Token ids**: `[[2235, 46486, 198, 15056, 262, ...], ...]`
+    * `50256`s for **dynamic padding** to batch length
+* Train & validation sets: **right** padding
+    * GPT-2 uses absolute **positional encoding**
+* Test set: **left** padding
+    * Not trained to respond after padding
 
 ---
 
-More precisely, inputs are sequences of continuous text of a certain length and the targets are the same sequence, shifted one token (word or piece of word) to the right. The model uses internally a mask-mechanism to make sure the predictions for the token i only uses the inputs from 1 to i but not the future tokens.
+### Input tensors (2/2)
+
+* **Attention masks**: `[[1, 1, 1, 1, 1, ...], ...]`
+    * `0` to **ignore padding** during attention calculation
+* **Labels**: token ids shifted by one
+    * Only **train and validation** sets
+    * `-100` to **ignore padding** during loss calculation
+
+---
+
+## Fine-tuning GPT-2
+
+### 3. Fine-tuning
+
+---
+
+### Computational resources
+
+![](pics/layer_distribution.png)
+* GPT-2: 1.5 billion **parameters**
+* 2x NVIDIA V100 on **ORFEO**
+    * **32GiB each**
+* Distributed using 🤗 **Accelerate** library
+    * Wraps **PyTorch**
+
+---
+
+### Main hyper-parameters
+
+* **Batch size**: 4 (cannot fit more)
+    * ~25,000 **steps** per epoch
+* **Loss function**: cross entropy
+* **Optimizer**: AdamW
+    * (Adam with weight decay regularization decoupled from optimization step)
+    * **Learning rate**: 5e-5 to 0
+        * **Decrease** linearly over ~50,000 steps
+
+---
+
+### Fine-tuning
+
+TODO
+
+two methods :
+
+* More precisely, inputs are sequences of continuous text of a certain length and the targets are the same sequence, shifted one token (word or piece of word) to the right. The model uses internally a mask-mechanism to make sure the predictions for the token i only uses the inputs from 1 to i but not the future tokens.
+
+* completion only data collator -100
+
+also how loss is calculated
+
 
 
