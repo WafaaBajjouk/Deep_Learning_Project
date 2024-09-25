@@ -116,7 +116,7 @@ if train:
         per_device_eval_batch_size=2, #crashes if too large
         torch_empty_cache_steps=None, #default None
         learning_rate=5e-5, #default 5e-5
-        num_train_epochs=1.5, #increase to continue a training that ended; use 0 to end a training that aborted
+        num_train_epochs=2.0, #increase to continue a training that ended; use 0 to end a training that aborted
         logging_steps=1600, #also sets eval_steps to same value by default
         save_steps=1600, #must be a round multiple of eval_steps
         save_total_limit=3, #still retains best checkpoint if load_best_model_at_end=True

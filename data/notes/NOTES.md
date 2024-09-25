@@ -36,7 +36,7 @@
 
 ![](pics/labeled_dataset.png)
 * **Columns**: `ticker`, `headline`, `preview`, `sentiment`
-* ~111,000+ **rows**
+* ~111k **rows**
 * **Balanced** w.r.t. sentiment
 
 ---
@@ -67,10 +67,10 @@
 
 ### Train-test-validation split
 
-* **Train**: ~98,000 news (~88%)
-* **Validation**: ~2000 news (~2%)
+* **Train**: ~98k news (~88%)
+* **Validation**: ~2k news (~2%)
     * For **hyperparameter** tuning on loss function
-* **Test**: ~11,000 news (~10%)
+* **Test**: ~11k news (~10%)
     * For **sentiment analysis** accuracy
     * Prompts do not include **responses**
 
@@ -80,7 +80,7 @@
 
 1. Breaks down prompt into **smaller units** (tokens)
 2. **Discards** results longer than 1024 tokens (~20 news)
-3. Maps tokens to **ids** in [0, 50,256]
+3. Maps tokens to **ids** in [0, 50256]
     * Same used by **OpenAI** for training
 * **Examples:**
     * 'Given the' -> `[15056, 262]`
@@ -129,12 +129,12 @@
 ### Main hyper-parameters
 
 * **Batch size**: 4 (cannot fit more)
-    * ~25,000 **steps** per epoch
+    * ~25k **steps** per epoch
 * **Loss function**: cross entropy
 * **Optimizer**: AdamW
     * (Adam with weight decay regularization decoupled from optimization step)
     * **Learning rate**: 5e-5 to 0
-        * **Decrease** linearly over ~50,000 steps
+        * **Decrease** linearly over ~50k steps
 
 ---
 
@@ -153,7 +153,7 @@
     * `-100` on **labels**
 
 * We tried it on **top** of previous one
-    * Accuracy **did not benefit**
+    * Spoiler: accuracy **did not benefit**
 
 ---
 
@@ -163,4 +163,34 @@
 
 ---
 
-### TODO
+### Train loss
+
+![](pics/train_loss.png)
+* **Colors**: consecutive Slurm jobs
+* **Completion only** after ~45k steps
+
+---
+
+### Validation loss
+
+![](pics/val_loss.png)
+* 2 **candidate** models:
+    1. `model`: ~25k **steps**
+    2. `model_comp`: ~25k steps + ~20k **completion only** steps
+
+---
+
+### Model comparison
+
+* Test set **accuracy**:
+    * `model`: 83% (**best**)
+    * `model_comp`: 82%
+* `model` confusion matrix
+![](pics/confusion_matrix.png)
+
+---
+
+### Conclusion
+
+TODO
+
