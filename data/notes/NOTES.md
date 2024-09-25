@@ -21,8 +21,57 @@
             pip install tensorboard
             pip install trl
             ```
+
+# For Fine-tuning part of presentation
+
 ---
 
-# For fine-tuning part of presentation
+## Fine-tuning GPT-2
 
-TODO
+### 1. Starting point
+
+---
+
+### Dataset obtained
+
+![](pics/labeled_dataset.png)
+* **Columns**: `ticker`, `headline`, `preview`, `sentiment`
+* ~111,000+ **rows**
+* **Balanced** w.r.t. sentiment
+
+---
+
+### Prompt template
+
+![](pics/prompt_template.png)
+* **Instruction tuning** format
+* **Markdown** to structure text
+
+---
+
+### Out of the box predictions
+
+![](pics/out_of_the_box_pred.png)
+* Trained to **continue text**
+
+![](pics/useless_helper.png)
+* Introduction to **help** but useless
+
+---
+
+## Fine-tuning GPT-2
+
+### 2. Data preprocessing
+
+---
+
+### Train-test-validation split
+
+* **Train**: ~98,000 news (~88%)
+* **Test**: ~11,000 news (~10%)
+* **Validation**: ~2000 news (~2%)
+
+---
+
+### TODO
+
