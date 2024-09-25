@@ -140,15 +140,27 @@
 
 ### Fine-tuning
 
-TODO
+1. For each token id in input, **predicts** probability distribution of next one
+    * Future token ids **masked**
+2. Calculate Total **loss** between predictions and labels
+3. **Minimize** loss with optimizer
 
-two methods :
+---
 
-* More precisely, inputs are sequences of continuous text of a certain length and the targets are the same sequence, shifted one token (word or piece of word) to the right. The model uses internally a mask-mechanism to make sure the predictions for the token i only uses the inputs from 1 to i but not the future tokens.
+### Fine-tuning on completion only
 
-* completion only data collator -100
+* Ignores prompt **instructions** during loss calculation
+    * `-100` on **labels**
 
-also how loss is calculated
+* We tried it on **top** of previous one
+    * Accuracy **did not benefit**
 
+---
 
+## Fine-tuning GPT-2
 
+### 4. Results
+
+---
+
+### TODO
