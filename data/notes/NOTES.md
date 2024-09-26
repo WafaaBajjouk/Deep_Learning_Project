@@ -79,7 +79,6 @@
 ### Tokenization
 
 1. Breaks down prompt into **smaller units** (tokens)
-2. **Discards** results longer than 1024 tokens (~20 news)
 3. Maps tokens to **ids** in [0, 50256]
     * Same used by **OpenAI** for training
 * **Examples:**
@@ -138,11 +137,11 @@
 
 ---
 
-### Fine-tuning
+### Fine-tuning step
 
-1. For each token id in input, **predicts** probability distribution of next one
+1. For each token id in input, **predict** probability distribution of next one
     * Future token ids **masked**
-2. Calculate Total **loss** between predictions and labels
+2. Calculate total **loss** between predictions and labels
 3. **Minimize** loss with optimizer
 
 ---
